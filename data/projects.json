@@ -1,0 +1,162 @@
+[
+  {
+    "id": "euchre-game",
+    "title": "EuchreGame",
+    "category": "Games",
+    "status": "confirmed",
+    "wasmRoute": "Pyodide 0.29.3 (vendored)",
+    "liveUrl": "https://euchre.livive.net/",
+    "repoUrl": "https://github.com/jpeckenpaugh/EuchreGame",
+    "whatItDoes": "Playable trick-taking card game running entirely client-side, with an optional on-device LLM opponent.",
+    "whatIsWasm": "The deterministic card engine (`euchre_game` package) runs in the browser via Pyodide.",
+    "whatIsNotWasm": "The LLM uses MediaPipe GenAI (LiteRT) with a user-supplied Gemma model running on WebGPU (WebLLM is legacy; repo README is stale). The 26 MB `genai_wasm_internal.wasm` acts as runtime glue.",
+    "whyWasmInferred": "The exact same Python game engine is imported by `tests/test_game.py` and the browser bridge (`game_bridge.py`), ensuring bug-for-bug test parity without porting rules to JavaScript.",
+    "alternativeConsidered": "A Python backend (introducing latency, hosting cost, and server ops) or a JS port (maintaining two identical rule engines in tandem).",
+    "footprint": {
+      "raw": "8,647,684 bytes (pyodide.asm.wasm) + 2.42 MB (python_stdlib.zip) ≈ 11 MB uncompressed",
+      "gzip": "2,817,769 bytes (wasm gzip -9)",
+      "method": "Measured with wc -c and gzip -9 on vendored assets. User-supplied Gemma model required for LLM opponent."
+    },
+    "networkNote": "Pyodide runtime vendored locally in repository; no CDN dependency at load time. Local Gemma model loaded from user disk."
+  },
+  {
+    "id": "p2p-ttt",
+    "title": "P2P Tic-Tac-Toe",
+    "category": "Peer-to-Peer",
+    "status": "confirmed",
+    "wasmRoute": "sql.js (vendored in Web Worker) + OPFS",
+    "liveUrl": "https://p2p-ttt.livive.net/",
+    "repoUrl": "https://github.com/jpeckenpaugh/p2p-ttt",
+    "whatItDoes": "Serverless peer-to-peer multiplayer Tic-Tac-Toe with local relational game persistence and zero telemetry.",
+    "whatIsWasm": "Compiled SQLite engine (sql.js) running inside a background Web Worker for relational querying and transaction logging.",
+    "whatIsNotWasm": "Peer connectivity uses standard browser WebRTC DataChannels. Signalling is completely manual via SDP compressed into '#z' hash links or QR codes (no STUN/TURN, no signalling server).",
+    "whyWasmInferred": "Full SQL query engine and relational integrity in the browser without server databases or complex IndexedDB schema code.",
+    "alternativeConsidered": "IndexedDB (key-value schema without native SQL query engine) or server-hosted database like PostgreSQL/Firebase.",
+    "footprint": {
+      "raw": "659,806 bytes (sql-wasm.wasm)",
+      "gzip": "321,893 bytes (wasm gzip -9)",
+      "method": "Measured with wc -c and gzip -9 on vendored sql.js. Note: Entire DB is re-exported to OPFS file on persist; does not use SQLite OPFS VFS."
+    },
+    "networkNote": "Zero network requests for database engine (vendored). Zero external signalling servers."
+  },
+  {
+    "id": "rl-livive-net",
+    "title": "LunarLander Policy Lab",
+    "category": "Simulation & ML",
+    "status": "confirmed",
+    "wasmRoute": "Pyodide 0.23.4 + ONNX Runtime Web 1.19.2 (CDN)",
+    "liveUrl": "https://rl.livive.net/",
+    "repoUrl": "https://github.com/jpeckenpaugh/rl-livive-net",
+    "whatItDoes": "Interactive reinforcement learning policy lab simulating OpenAI Gym LunarLander with live neural network agent evaluation.",
+    "whatIsWasm": "Both the physics simulation (PyPyBox2D pure Python via micropip under Pyodide) and neural network inference (ONNX Runtime Web with executionProviders:['wasm']). WASM CPU only, no WebGPU.",
+    "whatIsNotWasm": "Canvas rendering, chart orchestration, and telemetry UI implemented in vanilla modern JavaScript.",
+    "whyWasmInferred": "Run authentic Gymnasium Python environment and 9 trained ONNX policy networks entirely client-side without backend compute.",
+    "alternativeConsidered": "Server-side Python inference stream (expensive GPU/CPU compute bills) or porting Box2D/PPO agent directly to JS.",
+    "footprint": {
+      "raw": "8,971,931 bytes (Pyodide 0.23.4) + 11,018,731 bytes (ort-wasm-simd-threaded.wasm)",
+      "gzip": "2,860,914 bytes (Pyodide) + 2,911,583 bytes (ORT simd-threaded gzip -9)",
+      "method": "Measured with wc -c and gzip -9 against jsDelivr CDN assets. PPO model fetched from Hugging Face at build time."
+    },
+    "networkNote": "Loads Pyodide 0.23.4 and ONNX Runtime Web 1.19.2 from jsDelivr CDN at runtime."
+  },
+  {
+    "id": "rag-poc",
+    "title": "Northstar RAG POC",
+    "category": "AI & Retrieval",
+    "status": "confirmed",
+    "wasmRoute": "Transformers.js 3.0.2 embeddings (WASM default)",
+    "liveUrl": "https://rag.livive.net/",
+    "repoUrl": "https://github.com/jpeckenpaugh/rag-poc",
+    "whatItDoes": "Private on-device Retrieval-Augmented Generation demo performing vector embedding, semantic search, and local LLM synthesis.",
+    "whatIsWasm": "Text feature extraction and vector embedding generation run on WASM CPU (Transformers.js @ 3.0.2 onnx.wasm with numThreads=1 in a Web Worker).",
+    "whatIsNotWasm": "Autoregressive LLM generation runs via @mlc-ai/web-llm on WebGPU (Llama-3.2-1B, ~880 MB). Falls back to retrieval-only mode if WebGPU is unavailable.",
+    "whyWasmInferred": "Run embeddings and vector search in-browser without sending user documents or queries to third-party cloud embedding APIs.",
+    "alternativeConsidered": "Cloud embedding APIs (OpenAI/Voyage) or compiling native Rust vector indexes to WASM.",
+    "footprint": {
+      "raw": "ONNX Runtime Web WASM (~11 MB raw) + Quantized embedding model weights + ~880 MB WebGPU Llama weights",
+      "gzip": "~2.9 MB ORT WASM gzip -9; models downloaded dynamically",
+      "method": "Embedding worker confirmed WASM default in Transformers.js 3.0.2. Vector search under 2ms over 367 chunks reported in README."
+    },
+    "networkNote": "Hugging Face model weights and runtime dependencies downloaded on initial run via browser cache."
+  },
+  {
+    "id": "aom",
+    "title": "Age of Mycology",
+    "category": "Games",
+    "status": "confirmed",
+    "wasmRoute": "Pygbag 0.9.3 (Python 3.14 to WASM)",
+    "liveUrl": "https://aom.livive.net/",
+    "repoUrl": "https://github.com/jpeckenpaugh/aom",
+    "whatItDoes": "Atmospheric biological strategy/fungal survival game built with Pygame and compiled directly to WebAssembly.",
+    "whatIsWasm": "The entire Pygame game loop, entity component tree, logic, and rendering engine compiled via Pygbag (Note: Pygbag is distinct from Pyodide).",
+    "whatIsNotWasm": "Browser HTML shell and canvas mounting container produced by Pygbag CI toolchain.",
+    "whyWasmInferred": "Preserves core Python/Pygame codebase for web distribution without rewriting the entire simulation in Phaser or PixiJS.",
+    "alternativeConsidered": "Rebuilding game in pure WebGL/JavaScript engine or requiring users to install native desktop Python packages.",
+    "footprint": {
+      "raw": "aom.tar.gz bundle ~63 MB with atlas profile (optimized down from ~143 MB; GitHub Actions CI ceiling is 75 MB)",
+      "gzip": "Archive bundle already compressed",
+      "method": "Documented in aom repository CI workflow (.github/workflows/pages.yml)."
+    },
+    "networkNote": "Game bundle loaded as single archive from static GitHub Pages host."
+  },
+  {
+    "id": "lokarta",
+    "title": "Lokarta",
+    "category": "Simulation & ML",
+    "status": "confirmed",
+    "wasmRoute": "Pyodide 0.29.2 (CDN) + xterm.js",
+    "liveUrl": "https://lk.livive.net/",
+    "repoUrl": "https://github.com/jpeckenpaugh/lokarta",
+    "whatItDoes": "Web-accessible terminal sandbox and spatial simulation running interactive Python sessions directly in the browser.",
+    "whatIsWasm": "Full Python 3 environment running inside Pyodide, executing user simulation logic with persistent storage via Emscripten IDBFS.",
+    "whatIsNotWasm": "xterm.js terminal UI and web container event handling in client JavaScript.",
+    "whyWasmInferred": "Instant sandboxed execution of interactive Python tools with state persistence and zero backend attack surface.",
+    "alternativeConsidered": "Server-side containerized Python sandboxes (Docker/nsjail) with significant recurring VPS infrastructure and security exposure.",
+    "footprint": {
+      "raw": "~8.6 MB (pyodide.asm.wasm) + stdlib (~2.4 MB)",
+      "gzip": "~2.8 MB (wasm gzip -9)",
+      "method": "Standard Pyodide 0.29.2 footprint delivered via jsDelivr CDN."
+    },
+    "networkNote": "Pyodide runtime and packages fetched on first load from CDN; file system state saved to browser IndexedDB via IDBFS."
+  },
+  {
+    "id": "ai-chat-distil",
+    "title": "Closed-System Speech POC",
+    "category": "AI & Retrieval",
+    "status": "confirmed",
+    "wasmRoute": "LiteRT.js (vendored WASM accelerator)",
+    "liveUrl": "https://github.com/jpeckenpaugh/ai_chat_distil_01",
+    "repoUrl": "https://github.com/jpeckenpaugh/ai_chat_distil_01",
+    "whatItDoes": "Proof-of-concept for offline speech waveform reconstruction ('hello' / 'goodbye') using lightweight distilled neural models.",
+    "whatIsWasm": "LiteRT (TensorFlow Lite runtime) compiled to WASM (`accelerator: 'wasm'`), executing small TFLite quantized models.",
+    "whatIsNotWasm": "Audio Web Audio API context management, waveform canvas visualizer, and UI controls.",
+    "whyWasmInferred": "Evaluate tiny neural audio models with zero server roundtrips, strict local privacy, and low latency.",
+    "alternativeConsidered": "Web Audio DSP filters (harder to express learned representations) or server-based speech synthesis.",
+    "footprint": {
+      "raw": "8,414,718 bytes (litert_wasm_internal.wasm)",
+      "gzip": "2,558,774 bytes (wasm gzip -9)",
+      "method": "Measured with wc -c and gzip -9 on vendored litertjs WASM artifacts."
+    },
+    "networkNote": "Vendored runtime and local TFLite models; no external runtime network dependencies."
+  },
+  {
+    "id": "vibe-ttt",
+    "title": "Vibe Tic-Tac-Toe (Non-WASM Control)",
+    "category": "Control Baseline",
+    "status": "control",
+    "wasmRoute": "None (Pure Vanilla HTML5 / CSS3 / ES6)",
+    "liveUrl": "https://github.com/jpeckenpaugh/vibe-tic-tac-toe",
+    "repoUrl": "https://github.com/jpeckenpaugh/vibe-tic-tac-toe",
+    "whatItDoes": "Clean, instantaneous single-device Tic-Tac-Toe with local score tracking and theme selection.",
+    "whatIsWasm": "None. Included deliberately as the control baseline in the 'Tic-Tac-Toe Trilogy' demonstrating when WebAssembly is completely unnecessary.",
+    "whatIsNotWasm": "Entire application: 1 HTML file, 1 CSS stylesheet, 1 vanilla JavaScript script, and native browser localStorage.",
+    "whyWasmInferred": "WebAssembly was NOT chosen because the problem domain does not require heavy compute, pre-existing native libraries, or complex SQL engines.",
+    "alternativeConsidered": "Over-engineering with sql.js, Pyodide, or React. Rejected in favor of maximum simplicity and zero cold-start penalty.",
+    "footprint": {
+      "raw": "< 15 KB total codebase (HTML + CSS + JS combined)",
+      "gzip": "< 5 KB over the wire",
+      "method": "Direct inspection of repository assets. Instant 0 ms startup."
+    },
+    "networkNote": "Zero runtime external calls, zero WASM payloads, instant first-contentful paint."
+  }
+]
